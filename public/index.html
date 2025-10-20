@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sample List</title>
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Sample List</h1>
+    <div class="top-bar">
+      <button onclick="window.location.href='add.html'">+ Add New Sample</button>
+      <button onclick="window.location.href='params.html'">⚙ Parameters</button>
+    </div>
+    <div class="filter-bar">
+        <label>Ürün Grubu: </label>
+        <select id="productGroupFilter">
+          <option value="">Tümü</option>
+        </select>
+    </div>      
+    <table id="samplesTable" class="styled-table">
+        <thead>
+          <tr>
+            <th data-col="sample_status">Status</th>
+            <th data-col="model_kodu">Model Kodu</th>
+            <th data-col="product_group">Ürün Grubu</th>
+            <th data-col="line">Line</th>
+            <th data-col="fabric_type">Kumaş Tipi</th>
+            <th data-col="fit_type">Fit</th>
+            <th data-col="colors">Renkler</th>
+            <th data-col="updated_at">Updated At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+    </table>      
+  </div>
+
+  <script src="app.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>

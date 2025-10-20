@@ -1,0 +1,214 @@
+/* === GENEL FORM STİLİ === */
+form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 24px;
+    align-items: start;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  /* === LABEL VE INPUT === */
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    font-weight: 500;
+    color: #222;
+  }
+  
+  input,
+  select {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 180px; /* 🔹 kısa ve dengeli görünüm */
+    box-sizing: border-box;
+  }
+  
+  .full-width {
+    grid-column: span 2;
+    width: 100%;
+  }
+  
+  /* === RENK KISMI === */
+  #colorSection {
+    grid-column: span 2;
+    margin-top: 8px;
+  }
+  
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  
+  .color-row select {
+    width: 160px; /* 🔹 daha dar renk dropdown’ı */
+  }
+  
+  button.add-color {
+    margin-top: 8px;
+    background-color: #f8f8f8;
+    border: 1px dashed #aaa;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+  
+  button.add-color:hover {
+    background-color: #eaeaea;
+  }
+  
+  /* === BUTONLAR === */
+  .buttons {
+    grid-column: span 2;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  
+  button.save-btn {
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  button.save-btn:hover {
+    background: #555;
+  }
+  
+  /* === MESAJ ALANI === */
+  #msg {
+    grid-column: span 2;
+    text-align: center;
+    margin-top: 12px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  
+  /* === TABLO === */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    margin-top: 20px;
+  }
+  
+  .styled-table th,
+  .styled-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .styled-table th {
+    background: #fafafa;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  
+  .styled-table th:hover {
+    background: #f0f0f0;
+  }
+  
+  .styled-table tr:hover {
+    background: #f9f9f9;
+  }
+  
+  .styled-table th.active-sort {
+    background: #e8e8e8;
+    color: #222;
+  }
+  
+  /* === DÜZENLEME BUTONU === */
+  .edit-btn {
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  
+  .edit-btn:hover {
+    background: #555;
+  }
+  
+  .filter-bar {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Host Grotesk", sans-serif;
+  }
+  
+  .filter-bar select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .tabs button {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .tabs button.active {
+    background: #333;
+    color: white;
+  }
+  
+  tr.dragging {
+    opacity: 0.6;
+    background: #f9f9f9;
+  }
+  
+  .param-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .param-actions input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  
+  .param-actions button {
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  

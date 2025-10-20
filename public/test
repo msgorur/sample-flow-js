@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Parametre Yönetimi</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    body {
+      font-family: 'Host Grotesk', sans-serif;
+      background-color: #fafafa;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar {
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      background: #007bff;
+      padding: 6px 12px;
+      border-radius: 5px;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 8px 14px;
+      border: 1px solid #ddd;
+      background: #f8f8f8;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .tab.active {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 95%;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+
+    .btn-delete { background: #dc3545; color: white; }
+    .btn-add { background: #007bff; color: white; width: 100%; margin-top: 12px; }
+    .btn-reorder { background: #ffc107; color: black; margin-bottom: 10px; }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <h2>Parametre Yönetimi</h2>
+    <a href="/">← Ana Sayfa</a>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active">Ürün Grupları</button>
+      <button class="tab">Line</button>
+      <button class="tab">Kumaş Tipleri</button>
+      <button class="tab">Kumaş Tedarikçileri</button>
+      <button class="tab">Fit Tipleri</button>
+      <button class="tab">Yaka Tipleri</button>
+      <button class="tab">Numune Durumları</button>
+    </div>
+
+    <div id="paramTable"></div>
+  </div>
+
+  <script src="params.js"></script>
+</body>
+</html>

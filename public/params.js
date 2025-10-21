@@ -8,6 +8,7 @@ const tables = {
   "Numune Durumları": "sample_statuses"
 };
 
+
 let currentTable = "product_groups";
 
 // Sekme geçişleri

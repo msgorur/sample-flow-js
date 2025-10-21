@@ -93,7 +93,7 @@ function sortTable(column) {
 }
 
 function editSample(id) {
-  window.location.href = `edit.html?id=${id}`;
+  window.location.href = `form.html?id=${id}`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

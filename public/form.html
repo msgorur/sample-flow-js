@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Form</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1 id="formTitle">Yeni Numune Ekle</h1>
+    <form id="sampleForm">
+      <label>Model Kodu
+        <input type="text" name="model_kodu" required />
+      </label>
+
+      <label>Ürün Grubu
+        <select name="product_group_id"></select>
+      </label>
+
+      <label>Line
+        <select name="line_id"></select>
+      </label>
+
+      <label>Kumaş Tipi
+        <select name="fabric_type_id"></select>
+      </label>
+
+      <label>Kumaş Tedarikçisi
+        <select name="fabric_supplier_id"></select>
+      </label>
+
+      <label>Fit Tipi
+        <select name="fit_type_id"></select>
+      </label>
+
+      <label>Yaka Tipi
+        <select name="collar_type_id"></select>
+      </label>
+
+      <label>Durum
+        <select name="sample_status_id"></select>
+      </label>
+
+      <div id="colorSection" class="full-width">
+        <strong>Renkler</strong>
+        <div id="colorList"></div>
+        <button type="button" id="addColorBtn" class="add-color">+ Renk Ekle</button>
+      </div>
+
+      <div class="buttons">
+        <button type="submit" class="save-btn">Kaydet</button>
+        <button type="button" onclick="window.location.href='/'">İptal</button>
+      </div>
+
+      <div id="msg"></div>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="form.js"></script>
+</body>
+</html>

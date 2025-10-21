@@ -458,18 +458,28 @@ app.get('/api/params/:table', async (req, res) => {
     }
   });
   
+
   app.put('/api/params/:table/:id', async (req, res) => {
     const { table, id } = req.params;
     const { name, is_active } = req.body;
     try {
-      await pool.query(`UPDATE ${table} SET name=$1, is_active=$2 WHERE id=$3`, [name, is_active, id]);
+      console.log("🔹 PUT params:", { table, id, body: req.body });
+
+      const active = typeof is_active === "boolean" ? is_active : false;
+
+      if (name !== undefined && name !== null) {
+        await pool.query(`UPDATE ${table} SET name=$1, is_active=$2 WHERE id=$3`, [name, active, id]);
+      } else {
+        await pool.query(`UPDATE ${table} SET is_active=$1 WHERE id=$2`, [active, id]);
+      }
+
       res.json({ ok: true });
     } catch (err) {
       console.error('PUT params error:', err);
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.delete('/api/params/:table/:id', async (req, res) => {
     const { table, id } = req.params;
     try {

@@ -1,18 +1,17 @@
 async function fetchOptions() {
-    const res = await fetch('/api/options');
-    const data = await res.json();
-    return data;
+  const res = await fetch("/api/options");
+  return await res.json();
+}
+
+function fillSelect(sel, options) {
+  sel.innerHTML = '<option value="">-- seçiniz --</option>';
+  for (const o of options) {
+    const opt = document.createElement("option");
+    opt.value = o.id;
+    opt.textContent = o.name;
+    sel.appendChild(opt);
   }
-  
-  function fillSelect(sel, options) {
-    sel.innerHTML = '<option value="">-- select --</option>';
-    for (const o of options) {
-      const opt = document.createElement('option');
-      opt.value = o.id;
-      opt.textContent = o.name;
-      sel.appendChild(opt);
-    }
-  }
+}
   
 async function loadFormOptions() {
   try {

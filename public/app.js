@@ -14,19 +14,67 @@ async function fetchOptions() {
     }
   }
   
-  async function loadFormOptions() {
-    const data = await fetchOptions();
+async function loadFormOptions() {
+  try {
     const form = document.getElementById('sampleForm');
-    fillSelect(form.product_group_id, data.product_groups);
-    fillSelect(form.line_id, data.lines);
-    fillSelect(form.fabric_type_id, data.fabric_types);
-    fillSelect(form.fabric_supplier_id, data.fabric_suppliers);
-    fillSelect(form.fit_type_id, data.fit_types);
-    fillSelect(form.collar_type_id, data.collar_types);
-    fillSelect(form.sample_status_id, data.sample_statuses);
-    fillSelect(form.design_responsible_id, data.design_responsibles);
-    fillSelect(form.production_responsible_id, data.production_responsibles);
+    if (!form) {
+      console.warn("⚠️ Form element 'sampleForm' bulunamadı, loadFormOptions atlanıyor.");
+      return;
+    }
+
+    // Get available dropdown options (product_groups, lines, etc.)
+    const data = await fetchOptions();
+
+    // Get form configuration from backend (which fields are visible/required)
+    const res = await fetch('/api/ui/form/samples');
+    if (!res.ok) throw new Error(`Form structure load error: HTTP ${res.status}`);
+    const formConfig = await res.json();
+
+    // Create helper to safely fill selects
+    const safeFill = (field, options) => {
+      if (form[field]) fillSelect(form[field], options);
+      else console.warn(`⚠️ '${field}' alanı formda bulunamadı.`);
+    };
+
+    // Loop through configuration and fill relevant fields
+    for (const field of formConfig) {
+      if (!field.is_visible_form) continue;
+
+      switch (field.column_name) {
+        case 'product_group_id':
+          safeFill('product_group_id', data.product_groups);
+          break;
+        case 'line_id':
+          safeFill('line_id', data.lines);
+          break;
+        case 'fabric_type_id':
+          safeFill('fabric_type_id', data.fabric_types);
+          break;
+        case 'fabric_supplier_id':
+          safeFill('fabric_supplier_id', data.fabric_suppliers);
+          break;
+        case 'fit_type_id':
+          safeFill('fit_type_id', data.fit_types);
+          break;
+        case 'collar_type_id':
+          safeFill('collar_type_id', data.collar_types);
+          break;
+        case 'sample_status_id':
+          safeFill('sample_status_id', data.sample_statuses);
+          break;
+        case 'design_responsible_id':
+          safeFill('design_responsible_id', data.design_responsibles);
+          break;
+        case 'production_responsible_id':
+          safeFill('production_responsible_id', data.production_responsibles);
+          break;
+      }
+    }
+
+  } catch (err) {
+    console.error("❌ loadFormOptions hatası:", err);
   }
+}
   
   async function submitForm(e) {
     e.preventDefault();
@@ -108,4 +156,3 @@ async function fetchOptions() {
   }
   
   loadFormOptions().then(loadSamples);
-  

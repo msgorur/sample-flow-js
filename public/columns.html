@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sütun Görünürlüğü</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: 'Host Grotesk', sans-serif; background: #fafafa; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 10px; }
+    h2 { text-align: center; }
+    .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+    label { display: flex; align-items: center; gap: 8px; }
+    button { background: #28a745; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; margin-top: 20px; width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Ana Sayfa Sütun Görünürlüğü</h2>
+    <div class="checkbox-group" id="columnCheckboxes"></div>
+    <button onclick="saveColumns()">Kaydet</button>
+  </div>
+  <script src="columns.js"></script>
+</body>
+</html>

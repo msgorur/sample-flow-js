@@ -11,6 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+// Disable ETag to avoid 304-cached JSON (we want fresh UI configs every time)
+app.set('etag', false);
 
 // PostgreSQL bağlantısı
 const pool = new Pool({
@@ -100,6 +102,100 @@ app.get('/api/options', async (req, res) => {
   }
 });
 
+// =============================
+// UI Preferences (Column Visibility)
+// =============================
+
+// GET mevcut görünür sütunlar
+app.get('/api/ui/columns/:table', async (req, res) => {
+  const { table } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT column_name
+       FROM ui_columns
+       WHERE table_name = $1 AND COALESCE(is_visible, true) = true
+       ORDER BY sort_order NULLS LAST, column_name`,
+      [table]
+    );
+    // prevent caching of UI config responses
+    res.set('Cache-Control', 'no-store');
+    res.json(result.rows.map(r => r.column_name));
+  } catch (err) {
+    console.error('GET ui/columns error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// New endpoint for form samples UI columns
+app.get('/api/ui/form/samples', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        column_name,
+        label AS display_name,
+        COALESCE(is_visible_form, true) AS is_visible_form,
+        COALESCE(is_required, false) AS is_required,
+        sort_order
+      FROM ui_columns
+      WHERE table_name = 'samples' AND COALESCE(is_visible_form, true) = true
+      ORDER BY sort_order NULLS LAST, column_name
+    `);
+    res.set('Cache-Control', 'no-store');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error loading form fields:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Full UI column configuration (labels/visibility/required) for a table
+app.get('/api/ui/columns-config/:table', async (req, res) => {
+  const { table } = req.params;
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        column_name,
+        label,
+        COALESCE(is_visible, true)       AS is_visible,
+        COALESCE(is_visible_form, true)  AS is_visible_form,
+        COALESCE(is_required, false)     AS is_required,
+        sort_order
+      FROM ui_columns
+      WHERE table_name = $1
+      ORDER BY sort_order NULLS LAST, column_name
+    `, [table]);
+    res.set('Cache-Control', 'no-store');
+    res.json(rows);
+  } catch (err) {
+    console.error('GET ui/columns-config error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+  
+  
+  // PUT yeni görünür sütun seti kaydet
+  app.put('/api/ui/columns/:table', async (req, res) => {
+    try {
+      const { table } = req.params;
+      const { visible_columns } = req.body;
+  
+      await pool.query(
+        `
+        INSERT INTO ui_preferences (table_name, visible_columns)
+        VALUES ($1, $2)
+        ON CONFLICT (table_name)
+        DO UPDATE SET visible_columns = EXCLUDED.visible_columns, updated_at = NOW();
+        `,
+        [table, visible_columns]
+      );
+  
+      res.json({ ok: true });
+    } catch (err) {
+      console.error('PUT ui columns error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
 
 // ---------------------------------------------------------------------
 // 🧩 Colors endpoint
@@ -200,7 +296,7 @@ app.get('/api/samples', async (req, res) => {
           fit.name AS fit_type,
           ct.name  AS collar_type,
           ss.name  AS sample_status,
-          s.updated_at,
+          COALESCE(s.updated_at, s.created_at) AS updated_at,
           array_to_string(cn.color_names, ', ') AS colors
         FROM samples_test1 s
         LEFT JOIN product_groups pg ON pg.id = s.product_group_id
@@ -380,6 +476,14 @@ app.get('/api/params/:table', async (req, res) => {
       await pool.query(`DELETE FROM ${table} WHERE id=$1`, [id]);
       res.json({ ok: true });
     } catch (err) {
+      // 23503 = foreign_key_violation
+      if (err && err.code === '23503') {
+        console.error('DELETE params FK error:', err.detail || err.message);
+        return res.status(409).json({
+          error: 'FOREIGN_KEY_CONSTRAINT',
+          message: 'Bu değer bazı ürünlerde kullanılıyor olduğu için silinemez.'
+        });
+      }
       console.error('DELETE params error:', err);
       res.status(500).json({ error: err.message });
     }

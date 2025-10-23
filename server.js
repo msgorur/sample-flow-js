@@ -21,6 +21,51 @@ const pool = new Pool({
   password: process.env.PGPASSWORD,
 });
 
+const allowedParamTables = new Set([
+  'product_groups',
+  'lines',
+  'fabric_types',
+  'fabric_suppliers',
+  'fit_types',
+  'collar_types',
+  'sample_statuses',
+]);
+
+function getSafeParamTable(rawName) {
+  const table = String(rawName ?? '').toLowerCase();
+  if (!allowedParamTables.has(table)) {
+    const error = new Error('Unknown parameter table.');
+    error.statusCode = 400;
+    throw error;
+  }
+  return table;
+}
+
+function normalizeIntegerArray(value, fieldName) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (!Array.isArray(value)) {
+    const error = new Error(`${fieldName} must be an array of integers.`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const numbers = value.map((item) => {
+    const num = Number(item);
+    return Number.isInteger(num) ? num : NaN;
+  });
+
+  if (numbers.some((num) => Number.isNaN(num))) {
+    const error = new Error(`${fieldName} must contain only integers.`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return numbers.length > 0 ? numbers : null;
+}
+
 console.log("Connected with config:", {
   host: process.env.PGHOST,
   db: process.env.PGDATABASE,
@@ -143,6 +188,13 @@ app.post('/api/samples', async (req, res) => {
       color_list // INT[] bekleniyor
     } = req.body;
 
+    let colorArray = null;
+    try {
+      colorArray = normalizeIntegerArray(color_list, 'color_list');
+    } catch (validationError) {
+      return res.status(validationError.statusCode || 400).json({ error: validationError.message });
+    }
+
     if (!model_kodu || !product_group_id || !line_id || !fabric_type_id ||
         !fabric_supplier_id || !fit_type_id || !sample_status_id) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -172,7 +224,7 @@ app.post('/api/samples', async (req, res) => {
       fabric_content || null, fabric_name || null, fabric_width || null, fabric_weight || null,
       product_description || null, fabric_unit_price || null,
       print_supplier || null, embroidery_supplier || null, dyeing_supplier || null,
-      color_list || null
+      colorArray
     ];
 
     const result = await pool.query(sql, params);
@@ -254,24 +306,34 @@ app.get('/api/samples/:id', async (req, res) => {
 // ---------------------------------------------------------------------
 // 🧩 Sample güncelleme (PUT)
 // ---------------------------------------------------------------------
-app.put("/api/samples/:id", async (req, res) => {
+app.put('/api/samples/:id', async (req, res) => {
+  try {
+    const idParam = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(idParam)) {
+      return res.status(400).json({ error: 'Invalid sample id.' });
+    }
+
+    const {
+      model_kodu,
+      product_group_id,
+      line_id,
+      fabric_type_id,
+      fabric_supplier_id,
+      fit_type_id,
+      collar_type_id,
+      sample_status_id,
+      color_list,
+    } = req.body;
+
+    let colorArray;
     try {
-      const id = req.params.id;
-      const {
-        model_kodu,
-        product_group_id,
-        line_id,
-        fabric_type_id,
-        fabric_supplier_id,
-        fit_type_id,
-        collar_type_id,
-        sample_status_id,
-        color_ids, // 👈 frontend'den bu geliyor
-      } = req.body;
-      const colorArray = Array.isArray(color_ids) && color_ids.length > 0 ? color_ids : null;
-  
-      await pool.query(
-        `
+      colorArray = normalizeIntegerArray(color_list, 'color_list');
+    } catch (validationError) {
+      return res.status(validationError.statusCode || 400).json({ error: validationError.message });
+    }
+
+    await pool.query(
+      `
         UPDATE samples_test1 SET
           model_kodu=$1,
           product_group_id=$2,
@@ -294,11 +356,11 @@ app.put("/api/samples/:id", async (req, res) => {
           fit_type_id,
           collar_type_id,
           sample_status_id,
-          colorArray, 
-          id,
+          colorArray,
+          idParam,
         ]
       );
-  
+
       res.json({ success: true });
     } catch (err) {
       console.error(err);
@@ -314,86 +376,108 @@ app.put("/api/samples/:id", async (req, res) => {
 // ---------------------------------------------------------------------
 
 app.get('/api/params/:table', async (req, res) => {
-    try {
-      const { table } = req.params;
-      const { rows } = await pool.query(`SELECT id, name, is_active, sort_order FROM ${table} ORDER BY sort_order NULLS LAST, id`);
-      res.json(rows);
-    } catch (err) {
-      console.error('GET params error:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
-  
-  
-  app.post('/api/params/:table', async (req, res) => {
-    const { table } = req.params;
-    const { name } = req.body;
-    try {
-      const { rows } = await pool.query(`INSERT INTO ${table} (name, is_active, sort_order) VALUES ($1, true, COALESCE((SELECT MAX(sort_order)+1 FROM ${table}), 1)) RETURNING *`, [name]);
-      res.json(rows[0]);
-    } catch (err) {
-      console.error('POST params error:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
+  try {
+    const table = getSafeParamTable(req.params.table);
+    const { rows } = await pool.query(`SELECT id, name, is_active, sort_order FROM ${table} ORDER BY sort_order NULLS LAST, id`);
+    res.json(rows);
+  } catch (err) {
+    console.error('GET params error:', err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
 
-  app.put('/api/params/:table/reorder', async (req, res) => {
-    const { table } = req.params;
-    const { orders } = req.body;
-  
-    if (!Array.isArray(orders)) {
-      return res.status(400).json({ error: 'Invalid order data.' });
-    }
-  
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      for (const { id, sort_order } of orders) {
-        await client.query(`UPDATE ${table} SET sort_order = $1 WHERE id = $2`, [sort_order, id]);
-      }
-      await client.query('COMMIT');
-      res.json({ ok: true });
-    } catch (e) {
-      await client.query('ROLLBACK');
-      console.error('Reorder error:', e);
-      res.status(500).json({ error: e.message });
-    } finally {
-      client.release();
-    }
-  });
-  
 
-  app.put('/api/params/:table/:id', async (req, res) => {
-    const { table, id } = req.params;
-    const { name, is_active } = req.body;
-    try {
-      console.log("🔹 PUT params:", { table, id, body: req.body });
+app.post('/api/params/:table', async (req, res) => {
+  const { name } = req.body;
+  try {
+    const table = getSafeParamTable(req.params.table);
+    const { rows } = await pool.query(
+      `INSERT INTO ${table} (name, is_active, sort_order)
+       VALUES ($1, true, COALESCE((SELECT MAX(sort_order)+1 FROM ${table}), 1))
+       RETURNING *`,
+      [name]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('POST params error:', err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
 
-      const active = typeof is_active === "boolean" ? is_active : false;
+app.put('/api/params/:table/reorder', async (req, res) => {
+  const { orders } = req.body;
 
-      if (name !== undefined && name !== null) {
-        await pool.query(`UPDATE ${table} SET name=$1, is_active=$2 WHERE id=$3`, [name, active, id]);
-      } else {
-        await pool.query(`UPDATE ${table} SET is_active=$1 WHERE id=$2`, [active, id]);
+  if (!Array.isArray(orders)) {
+    return res.status(400).json({ error: 'Invalid order data.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const table = getSafeParamTable(req.params.table);
+    await client.query('BEGIN');
+    for (const item of orders) {
+      const id = Number.parseInt(item.id, 10);
+      const sortOrder = Number.parseInt(item.sort_order, 10);
+
+      if (!Number.isInteger(id) || !Number.isInteger(sortOrder)) {
+        const error = new Error('Invalid order data.');
+        error.statusCode = 400;
+        throw error;
       }
 
-      res.json({ ok: true });
-    } catch (err) {
-      console.error('PUT params error:', err);
-      res.status(500).json({ error: err.message });
+      await client.query(`UPDATE ${table} SET sort_order = $1 WHERE id = $2`, [sortOrder, id]);
     }
-  });
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    console.error('Reorder error:', e);
+    res.status(e.statusCode || 500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+  
 
-  app.delete('/api/params/:table/:id', async (req, res) => {
-    const { table, id } = req.params;
-    try {
-      await pool.query(`DELETE FROM ${table} WHERE id=$1`, [id]);
-      res.json({ ok: true });
-    } catch (err) {
-      console.error('DELETE params error:', err);
-      res.status(500).json({ error: err.message });
+app.put('/api/params/:table/:id', async (req, res) => {
+  const { name, is_active } = req.body;
+  try {
+    const table = getSafeParamTable(req.params.table);
+    const id = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Invalid record id.' });
     }
-  });
+
+    const active = typeof is_active === 'boolean' ? is_active : false;
+
+    if (name !== undefined && name !== null) {
+      await pool.query(`UPDATE ${table} SET name=$1, is_active=$2 WHERE id=$3`, [name, active, id]);
+    } else {
+      await pool.query(`UPDATE ${table} SET is_active=$1 WHERE id=$2`, [active, id]);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PUT params error:', err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/params/:table/:id', async (req, res) => {
+  try {
+    const table = getSafeParamTable(req.params.table);
+    const id = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Invalid record id.' });
+    }
+
+    await pool.query(`DELETE FROM ${table} WHERE id=$1`, [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE params error:', err);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
   
 
   

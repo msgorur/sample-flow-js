@@ -1,22 +1,45 @@
 let colorOptions = [];
-let mode = "add";
+let mode = 'add';
 let editId = null;
 
 function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+function toIntegerOrNull(value) {
+  const num = Number(value);
+  return Number.isInteger(num) ? num : null;
+}
+
+function getSelectedColorIds() {
+  return Array.from(document.querySelectorAll('#colorList select'))
+    .map((select) => Number.parseInt(select.value, 10))
+    .filter((value) => Number.isInteger(value));
+}
+
+function showMessage(text, type = 'info') {
+  const msg = document.getElementById('msg');
+  if (!msg) return;
+
+  msg.textContent = text;
+  msg.style.color = type === 'error' ? 'red' : 'green';
+}
+
 async function initForm() {
-  const id = getParam("id");
+  const id = getParam('id');
   if (id) {
-    mode = "edit";
+    mode = 'edit';
     editId = id;
-    document.getElementById("formTitle").textContent = "Numune Düzenle";
+    const title = document.getElementById('formTitle');
+    if (title) {
+      title.textContent = 'Numune Düzenle';
+    }
   }
 
-  const data = await fetchOptions();
-  const form = document.getElementById("sampleForm");
+  const form = document.getElementById('sampleForm');
+  if (!form) return;
 
+  const data = await fetchOptions();
   fillSelect(form.product_group_id, data.product_groups);
   fillSelect(form.line_id, data.lines);
   fillSelect(form.fabric_type_id, data.fabric_types);
@@ -27,96 +50,171 @@ async function initForm() {
 
   await loadColors();
 
-  if (mode === "edit") {
+  if (mode === 'edit') {
     await loadExistingSample(editId);
   } else {
     addColorRow();
   }
 
-  document.getElementById("addColorBtn").addEventListener("click", () => addColorRow());
-  document.getElementById("sampleForm").addEventListener("submit", handleSubmit);
+  const addColorBtn = document.getElementById('addColorBtn');
+  if (addColorBtn) {
+    addColorBtn.addEventListener('click', () => addColorRow());
+  }
+
+  form.addEventListener('submit', handleSubmit);
 }
 
 async function loadColors() {
-  const res = await fetch("/api/colors");
-  colorOptions = await res.json();
+  try {
+    const res = await fetch('/api/colors');
+    if (!res.ok) {
+      throw new Error(`colors fetch failed (${res.status})`);
+    }
+    colorOptions = await res.json();
+  } catch (err) {
+    console.error('Failed to load colors:', err);
+    colorOptions = [];
+  }
 }
 
 function addColorRow(selectedId = null) {
-  const div = document.createElement("div");
-  div.className = "color-row";
+  if (!Array.isArray(colorOptions) || colorOptions.length === 0) {
+    console.warn('Color options not loaded yet');
+    return;
+  }
 
-  const select = document.createElement("select");
+  const currentIds = getSelectedColorIds();
+  if (!selectedId && currentIds.length >= colorOptions.length) {
+    alert('Tüm renkler zaten eklendi.');
+    return;
+  }
+
+  const available = colorOptions.filter(
+    (color) => !currentIds.includes(color.id) || color.id === Number(selectedId)
+  );
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'color-row';
+
+  const select = document.createElement('select');
   select.innerHTML =
-    `<option value="">-- renk seç --</option>` +
-    colorOptions.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
-  if (selectedId) select.value = selectedId;
+    '<option value="">-- renk seç --</option>' +
+    available.map((color) => `<option value="${color.id}">${color.name}</option>`).join('');
 
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = "✕";
-  btn.onclick = () => div.remove();
+  if (selectedId && available.some((color) => color.id === Number(selectedId))) {
+    select.value = String(selectedId);
+  }
 
-  div.appendChild(select);
-  div.appendChild(btn);
-  document.getElementById("colorList").appendChild(div);
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.textContent = '✕';
+  removeBtn.addEventListener('click', () => wrapper.remove());
+
+  wrapper.appendChild(select);
+  wrapper.appendChild(removeBtn);
+  document.getElementById('colorList').appendChild(wrapper);
 }
 
 async function loadExistingSample(id) {
   const res = await fetch(`/api/samples/${id}`);
-  const s = await res.json();
-  const f = document.getElementById("sampleForm");
+  if (!res.ok) {
+    showMessage('Numune yüklenemedi.', 'error');
+    return;
+  }
 
-  f.model_kodu.value = s.model_kodu ?? "";
-  f.product_group_id.value = s.product_group_id ?? "";
-  f.line_id.value = s.line_id ?? "";
-  f.fabric_type_id.value = s.fabric_type_id ?? "";
-  f.fabric_supplier_id.value = s.fabric_supplier_id ?? "";
-  f.fit_type_id.value = s.fit_type_id ?? "";
-  f.collar_type_id.value = s.collar_type_id ?? "";
-  f.sample_status_id.value = s.sample_status_id ?? "";
+  const sample = await res.json();
+  const form = document.getElementById('sampleForm');
 
-  document.getElementById("colorList").innerHTML = "";
-  (s.color_list || []).forEach(cid => addColorRow(cid));
-}
+  form.model_kodu.value = sample.model_kodu ?? '';
+  form.product_group_id.value = sample.product_group_id ?? '';
+  form.line_id.value = sample.line_id ?? '';
+  form.fabric_type_id.value = sample.fabric_type_id ?? '';
+  form.fabric_supplier_id.value = sample.fabric_supplier_id ?? '';
+  form.fit_type_id.value = sample.fit_type_id ?? '';
+  form.collar_type_id.value = sample.collar_type_id ?? '';
+  form.sample_status_id.value = sample.sample_status_id ?? '';
 
-async function handleSubmit(e) {
-  e.preventDefault();
-  const f = e.target;
+  const colorList = document.getElementById('colorList');
+  colorList.innerHTML = '';
 
-  const payload = {
-    model_kodu: f.model_kodu.value.trim(),
-    product_group_id: Number(f.product_group_id.value),
-    line_id: Number(f.line_id.value),
-    fabric_type_id: Number(f.fabric_type_id.value),
-    fabric_supplier_id: Number(f.fabric_supplier_id.value),
-    fit_type_id: Number(f.fit_type_id.value),
-    collar_type_id: Number(f.collar_type_id.value),
-    sample_status_id: Number(f.sample_status_id.value),
-    color_list: Array.from(document.querySelectorAll("#colorList select"))
-      .map(s => parseInt(s.value))
-      .filter(Boolean)
-  };
-
-  const method = mode === "add" ? "POST" : "PUT";
-  const url = mode === "add" ? "/api/samples" : `/api/samples/${editId}`;
-
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const msg = document.getElementById("msg");
-  if (res.ok) {
-    msg.textContent = "✅ Kaydedildi.";
-    msg.style.color = "green";
-    setTimeout(() => (window.location.href = "/"), 1200);
+  const colorIds = Array.isArray(sample.color_list) ? sample.color_list : [];
+  if (colorIds.length > 0) {
+    colorIds.forEach((colorId) => addColorRow(colorId));
   } else {
-    const err = await res.json().catch(() => ({}));
-    msg.textContent = "❌ Hata: " + (err.error || "İşlem başarısız");
-    msg.style.color = "red";
+    addColorRow();
   }
 }
 
-document.addEventListener("DOMContentLoaded", initForm);
+async function ensureUniqueModel(modelCode) {
+  const base = `/api/samples/check-model/${encodeURIComponent(modelCode)}`;
+  const url = mode === 'edit' && editId ? `${base}?exclude=${editId}` : base;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`model check failed (${res.status})`);
+  }
+  const data = await res.json();
+  return !data.exists;
+}
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+
+  const modelCode = form.model_kodu.value.trim();
+  if (!modelCode) {
+    showMessage('Model kodu zorunludur.', 'error');
+    return;
+  }
+
+  try {
+    const unique = await ensureUniqueModel(modelCode);
+    if (!unique) {
+      showMessage('Bu model kodu başka bir kayıtta mevcut.', 'error');
+      return;
+    }
+  } catch (err) {
+    console.error('Model check failed:', err);
+    showMessage('Model kodu kontrolü yapılamadı.', 'error');
+    return;
+  }
+
+  const colorIds = getSelectedColorIds();
+
+  const payload = {
+    model_kodu: modelCode,
+    product_group_id: toIntegerOrNull(form.product_group_id.value),
+    line_id: toIntegerOrNull(form.line_id.value),
+    fabric_type_id: toIntegerOrNull(form.fabric_type_id.value),
+    fabric_supplier_id: toIntegerOrNull(form.fabric_supplier_id.value),
+    fit_type_id: toIntegerOrNull(form.fit_type_id.value),
+    collar_type_id: toIntegerOrNull(form.collar_type_id.value),
+    sample_status_id: toIntegerOrNull(form.sample_status_id.value),
+    color_list: colorIds.length > 0 ? colorIds : null,
+  };
+
+  const method = mode === 'add' ? 'POST' : 'PUT';
+  const url = mode === 'add' ? '/api/samples' : `/api/samples/${editId}`;
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      showMessage('✅ Kaydedildi.', 'success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1200);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showMessage(`❌ Hata: ${err.error || 'İşlem başarısız'}`, 'error');
+    }
+  } catch (err) {
+    console.error('Save failed:', err);
+    showMessage('❌ Ağ hatası veya sunucu erişilemedi.', 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initForm);

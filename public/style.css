@@ -1,3 +1,52 @@
+/* === GENEL STİLLER === */
+body {
+  font-family: 'Host Grotesk', sans-serif;
+  background-color: #fafafa;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 20px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.top-bar button {
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.top-bar button:hover {
+  background: #555;
+}
+
+h1 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+}
+
 /* === GENEL FORM STİLİ === */
 form {
     display: grid;
@@ -47,7 +96,22 @@ form {
   }
   
   .color-row select {
-    width: 160px; /* 🔹 daha dar renk dropdown’ı */
+    width: 160px; /* 🔹 daha dar renk dropdown'ı */
+  }
+
+  .color-row button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+  }
+
+  .color-row button:hover {
+    background: #c82333;
   }
   
   button.add-color {
@@ -211,4 +275,86 @@ form {
     padding: 6px 12px;
     cursor: pointer;
   }
+
+/* === PARAMETERS PAGE STYLES === */
+.navbar {
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.navbar a {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  background: #007bff;
+  padding: 6px 12px;
+  border-radius: 5px;
+}
+
+.navbar a:hover {
+  background: #0056b3;
+}
+
+/* Action row styles */
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9f9fc;
+  padding: 12px 10px;
+  border-top: 1px solid #ddd;
+  margin-top: 10px;
+}
+
+.action-row-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.action-row-left input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.btn-delete { 
+  background: #dc3545; 
+  color: white; 
+}
+
+.btn-add { 
+  background: #007bff; 
+  color: white; 
+  padding: 6px 16px; 
+  border-radius: 6px; 
+}
+
+.btn-save {
+  background: #28a745;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* Drag handle */
+tr[data-id] td:first-child {
+  cursor: grab;
+}
+
+tr[data-id] td:first-child:active {
+  cursor: grabbing;
+}
   

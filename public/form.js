@@ -105,14 +105,45 @@ function addColorRow(selectedId = null) {
     select.value = String(selectedId);
   }
 
+  // Add change event to prevent duplicate selections
+  select.addEventListener('change', () => {
+    const selectedValue = select.value;
+    if (selectedValue) {
+      // Update other selects to remove this option
+      updateColorOptions();
+    }
+  });
+
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.textContent = '✕';
-  removeBtn.addEventListener('click', () => wrapper.remove());
+  removeBtn.addEventListener('click', () => {
+    wrapper.remove();
+    updateColorOptions();
+  });
 
   wrapper.appendChild(select);
   wrapper.appendChild(removeBtn);
   document.getElementById('colorList').appendChild(wrapper);
+}
+
+function updateColorOptions() {
+  const selects = document.querySelectorAll('#colorList select');
+  const selectedIds = Array.from(selects)
+    .map(select => select.value)
+    .filter(value => value);
+
+  selects.forEach(select => {
+    const currentValue = select.value;
+    const options = Array.from(select.options);
+    
+    options.forEach(option => {
+      if (option.value && option.value !== currentValue) {
+        option.disabled = selectedIds.includes(option.value);
+        option.style.display = selectedIds.includes(option.value) ? 'none' : '';
+      }
+    });
+  });
 }
 
 async function loadExistingSample(id) {
@@ -160,9 +191,36 @@ async function handleSubmit(event) {
   event.preventDefault();
   const form = event.target;
 
+  // Basic validation
   const modelCode = form.model_kodu.value.trim();
   if (!modelCode) {
     showMessage('Model kodu zorunludur.', 'error');
+    form.model_kodu.focus();
+    return;
+  }
+
+  // Check required fields
+  const requiredFields = [
+    { field: 'product_group_id', name: 'Ürün Grubu' },
+    { field: 'line_id', name: 'Line' },
+    { field: 'fabric_type_id', name: 'Kumaş Tipi' },
+    { field: 'fabric_supplier_id', name: 'Kumaş Tedarikçisi' },
+    { field: 'fit_type_id', name: 'Fit Tipi' },
+    { field: 'sample_status_id', name: 'Durum' }
+  ];
+
+  for (const { field, name } of requiredFields) {
+    if (!form[field].value) {
+      showMessage(`${name} seçimi zorunludur.`, 'error');
+      form[field].focus();
+      return;
+    }
+  }
+
+  // Check if at least one color is selected
+  const colorIds = getSelectedColorIds();
+  if (colorIds.length === 0) {
+    showMessage('En az bir renk seçmelisiniz.', 'error');
     return;
   }
 
@@ -205,7 +263,7 @@ async function handleSubmit(event) {
     if (res.ok) {
       showMessage('✅ Kaydedildi.', 'success');
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.href = 'index.html';
       }, 1200);
     } else {
       const err = await res.json().catch(() => ({}));
